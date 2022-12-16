@@ -203,7 +203,7 @@ for g=1:length(groups)
             %We can try to see if we can use 3=ITC
             try 
 
-                TFA = GrandAveragerTFA(grandAvgFiles,3);
+                TFA = GrandAveragerTFA(grandAvgFiles,1);
             catch
                 %If this doesn't work add it to a list and continue
                 badFiles{end + 1} = [tfaTypes{tfatype} '_' strjoin(groups{g},'_')];
@@ -254,11 +254,11 @@ for tfatype=1:length(tfaTypes)
         else
             datatype = 0;
         end
-        binArray = [1]; % Bin indices to plot
+        binArray = [1 2 3 4]; % Bin indices to plot %TODO:change the 
         chanArray = [5]; % Maximum number of channels = TFA.nchan
         if contains(tfaFiles{t},tfaTypes{3})
-            %500 BL
-            amprange = [-0.01 0.09]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
+            %Total power
+            amprange = [-1 1]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
         elseif contains(tfaFiles{t},tfaTypes{2})
             %Evoked Power
              amprange = [0 3]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
@@ -270,7 +270,7 @@ for tfatype=1:length(tfaTypes)
         end
         twindow = [-200 1000 -200:250:1000]; % Time window where the first two numbers are the min and max and then remaining numbers designate the ticks
         fwindow = [0 28    2 4 7 12.5 30 ]; % Time frequency window structured similarly to the twindow
-        blcwin = [-500 0]; % Baseline correction window
+        blcwin = [-150 -50]; % Baseline correction window
         blctype = 'None'; % 'Divisive','none', or subtractive are the other types
         fshading = 'interp'; % Controls of color shading. Can be 'flat' or  'interp'.
         fcontour = 'off'; % displays isolines calculated from matrix Z and fills the areas between the isolines using constant colors corresponding to the current figure's colormap. Can be 'on' or  'off'.
