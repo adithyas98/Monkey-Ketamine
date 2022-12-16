@@ -247,8 +247,8 @@ for tfatype=1:length(tfaTypes)
         TFA = loadTFA('filename',tfaFiles{t},'filepath',tfaAvgFolder); %load TFA file to plot
 
 		%We want to loop through each bin and create a plot for it
-		nBins = TFA.nbin
-		binDescriptors = TFA.bindescr
+		nBins = TFA.nbin;
+		binDescriptors = TFA.bindescr;
 		for bin=1:nBins
 			%We want to set this setting differently based on the type of TFA
 			%we are looking at, this will be based on the tfaTypes variable
@@ -260,10 +260,10 @@ for tfatype=1:length(tfaTypes)
 				datatype = 0;
 			end
 			binArray = [bin]; % Bin indices to plot %TODO:change the 
-			chanArray = [5]; % Maximum number of channels = TFA.nchan
+			chanArray = [TFA.nchan]; % Maximum number of channels = TFA.nchan
 			if contains(tfaFiles{t},tfaTypes{3})
 				%Total power
-				amprange = [-1 1]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
+				amprange = [-0.1 0.1]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
 			elseif contains(tfaFiles{t},tfaTypes{2})
 				%Evoked Power
 				 amprange = [0 3]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
@@ -276,7 +276,7 @@ for tfatype=1:length(tfaTypes)
 			twindow = [-200 1000 -200:250:1000]; % Time window where the first two numbers are the min and max and then remaining numbers designate the ticks
 			fwindow = [0 28    2 4 7 12.5 30 ]; % Time frequency window structured similarly to the twindow
 			blcwin = [-150 -50]; % Baseline correction window
-			blctype = 'None'; % 'Divisive','none', or subtractive are the other types
+			blctype = 'subtractive'; % 'Divisive','none', or subtractive are the other types
 			fshading = 'interp'; % Controls of color shading. Can be 'flat' or  'interp'.
 			fcontour = 'off'; % displays isolines calculated from matrix Z and fills the areas between the isolines using constant colors corresponding to the current figure's colormap. Can be 'on' or  'off'.
 			Ylog = 1; % Logarithmic scale for frequency range (fwindow). Can be 1 (means apply log scale)  or  0 (means apply linear scale).
@@ -290,12 +290,13 @@ for tfatype=1:length(tfaTypes)
 			%Make our plot
 	%         subplot(2,3,i);
 			plotTFA(TFA, datatype, binArray, chanArray, amprange, twindow, fwindow, blcwin, blctype,fshading,fcontour,Ylog,plotype);
-			
-			title([fileNameOnly{1}':' binDescriptors{bin} '_EvokedPower'],'interpreter', 'none')
+			filename = strcat(fileNameOnly{1}(7:20),'_',binDescriptors{bin},'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
+			title(filename,'interpreter', 'none')
 			%title('hello','interpreter', 'none');
 			colorbar
 			ax = gca;
-			saveas(ax,[groupPlots '\' tfaFiles{t} '.png'])
+            fileloc = strcat(groupPlots,'\',filename,'.png');
+			saveas(ax,fileloc)
 		end
 
     end
