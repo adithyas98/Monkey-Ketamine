@@ -290,7 +290,7 @@ for tfatype=1:length(tfaTypes)
 			%Make our plot
 	%         subplot(2,3,i);
 			plotTFA(TFA, datatype, binArray, chanArray, amprange, twindow, fwindow, blcwin, blctype,fshading,fcontour,Ylog,plotype);
-			filename = strcat(fileNameOnly{1}(7:20),'_',binDescriptors{bin},'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
+			filename = strcat(binDescriptors{bin},'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
 			title(filename,'interpreter', 'none')
 			%title('hello','interpreter', 'none');
 			colorbar
