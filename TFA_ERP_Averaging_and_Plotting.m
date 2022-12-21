@@ -192,6 +192,8 @@ for g=1:length(groups)
             end
             if matchFlag
                 grandAvgFiles{end + 1} = tfaFiles{t};
+                
+                
             else
                 continue;
             end
@@ -248,8 +250,10 @@ for tfatype=1:length(tfaTypes)
 
 		%We want to loop through each bin and create a plot for it
 		nBins = TFA.nbin;
+        nChans = TFA.nchan;
 		binDescriptors = TFA.bindescr;
 		for bin=1:nBins
+            for chan=1:nChans
 			%We want to set this setting differently based on the type of TFA
 			%we are looking at, this will be based on the tfaTypes variable
 			%above
@@ -260,10 +264,10 @@ for tfatype=1:length(tfaTypes)
 				datatype = 0;
 			end
 			binArray = [bin]; % Bin indices to plot %TODO:change the 
-			chanArray = [TFA.nchan]; % Maximum number of channels = TFA.nchan
+			chanArray = [chan]; % Maximum number of channels = TFA.nchan
 			if contains(tfaFiles{t},tfaTypes{3})
 				%Total power
-				amprange = [-0.1 0.1]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
+				amprange = [-0.02 0.02]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
 			elseif contains(tfaFiles{t},tfaTypes{2})
 				%Evoked Power
 				 amprange = [0 3]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
@@ -289,15 +293,17 @@ for tfatype=1:length(tfaTypes)
 			% electrode_title = 0;
 			%Make our plot
 	%         subplot(2,3,i);
+            disp(strcat(string(bin),',',string(chan)))
 			plotTFA(TFA, datatype, binArray, chanArray, amprange, twindow, fwindow, blcwin, blctype,fshading,fcontour,Ylog,plotype);
-			filename = strcat(binDescriptors{bin},'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
+			filename = strcat(binDescriptors{bin},'_ch',string(chan),'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
 			title(filename,'interpreter', 'none')
 			%title('hello','interpreter', 'none');
 			colorbar
 			ax = gca;
             fileloc = strcat(groupPlots,'\',filename,'.png');
 			saveas(ax,fileloc)
-		end
+            end
+        end
 
     end
 end 
