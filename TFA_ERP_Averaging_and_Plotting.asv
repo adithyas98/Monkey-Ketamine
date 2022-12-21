@@ -192,6 +192,8 @@ for g=1:length(groups)
             end
             if matchFlag
                 grandAvgFiles{end + 1} = tfaFiles{t};
+                
+                
             else
                 continue;
             end
@@ -248,26 +250,24 @@ for tfatype=1:length(tfaTypes)
 
 		%We want to loop through each bin and create a plot for it
 		nBins = TFA.nbin;
+        nChans = TFA.nchan;
 		binDescriptors = TFA.bindescr;
 		for bin=1:nBins
+            for chan=1:nChans
 			%We want to set this setting differently based on the type of TFA
 			%we are looking at, this will be based on the tfaTypes variable
 			%above
 			%tfaTypes = {'ITC','POW','TFA'}; For reference
-			if contains(tfaFiles{t},tfaTypes{1})
-				datatype = 3; % 0=power; 1=phase; 2=amplitude; 3=ITC (you can specify more than one value)
-			else
-				datatype = 0;
-			end
+			datatype = 1; % 0=power; 1=Phase(but really ITC)
 			binArray = [bin]; % Bin indices to plot %TODO:change the 
-			chanArray = [TFA.nchan]; % Maximum number of channels = TFA.nchan
-			if contains(tfaFiles{t},tfaTypes{3})
+			chanArray = [chan]; % Maximum number of channels = TFA.nchan
+			if datatype == 0
 				%Total power
-				amprange = [-0.1 0.1]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
-			elseif contains(tfaFiles{t},tfaTypes{2})
+				amprange = [-0.02 0.02]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
+			elseif datatype == 2
 				%Evoked Power
 				 amprange = [0 3]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
-			elseif contains(tfaFiles{t},tfaTypes{1})
+			elseif datatype == 1
 				 % ITC
 				 amprange = [0 0.5]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
 			else
@@ -275,7 +275,8 @@ for tfatype=1:length(tfaTypes)
 			end
 			twindow = [-200 1000 -200:250:1000]; % Time window where the first two numbers are the min and max and then remaining numbers designate the ticks
 			fwindow = [0 28    2 4 7 12.5 30 ]; % Time frequency window structured similarly to the twindow
-			blcwin = [-150 -50]; % Baseline correction window
+			%blcwin = [-150 -50]; % Baseline correction window
+            blcwin = [0 0]; % Baseline correction window
 			blctype = 'subtractive'; % 'Divisive','none', or subtractive are the other types
 			fshading = 'interp'; % Controls of color shading. Can be 'flat' or  'interp'.
 			fcontour = 'off'; % displays isolines calculated from matrix Z and fills the areas between the isolines using constant colors corresponding to the current figure's colormap. Can be 'on' or  'off'.
@@ -289,15 +290,17 @@ for tfatype=1:length(tfaTypes)
 			% electrode_title = 0;
 			%Make our plot
 	%         subplot(2,3,i);
+            disp(strcat(string(bin),',',string(chan)))
 			plotTFA(TFA, datatype, binArray, chanArray, amprange, twindow, fwindow, blcwin, blctype,fshading,fcontour,Ylog,plotype);
-			filename = strcat(fileNameOnly{1}(7:20),'_',binDescriptors{bin},'_Baseline:',blctype,':',strjoin(string(blcwin),','));
+			filename = strcat(binDescriptors{bin},'_ch',string(chan),'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
 			title(filename,'interpreter', 'none')
 			%title('hello','interpreter', 'none');
 			colorbar
 			ax = gca;
             fileloc = strcat(groupPlots,'\',filename,'.png');
-			saveas(ax,)
-		end
+			saveas(ax,fileloc)
+            end
+        end
 
     end
 end 

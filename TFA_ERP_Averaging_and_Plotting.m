@@ -258,20 +258,16 @@ for tfatype=1:length(tfaTypes)
 			%we are looking at, this will be based on the tfaTypes variable
 			%above
 			%tfaTypes = {'ITC','POW','TFA'}; For reference
-			if contains(tfaFiles{t},tfaTypes{1})
-				datatype = 3; % 0=power; 1=phase; 2=amplitude; 3=ITC (you can specify more than one value)
-			else
-				datatype = 0;
-			end
+			datatype = 1; % 0=power; 1=Phase(but really ITC)
 			binArray = [bin]; % Bin indices to plot %TODO:change the 
 			chanArray = [chan]; % Maximum number of channels = TFA.nchan
-			if contains(tfaFiles{t},tfaTypes{3})
+			if datatype == 0
 				%Total power
 				amprange = [-0.02 0.02]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
-			elseif contains(tfaFiles{t},tfaTypes{2})
+			elseif datatype == 2
 				%Evoked Power
 				 amprange = [0 3]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
-			elseif contains(tfaFiles{t},tfaTypes{1})
+			elseif datatype == 1
 				 % ITC
 				 amprange = [0 0.5]; % Amplitude range (Z-scale) (displayed as colormap) to plot.
 			else
@@ -279,8 +275,10 @@ for tfatype=1:length(tfaTypes)
 			end
 			twindow = [-200 1000 -200:250:1000]; % Time window where the first two numbers are the min and max and then remaining numbers designate the ticks
 			fwindow = [0 28    2 4 7 12.5 30 ]; % Time frequency window structured similarly to the twindow
-			blcwin = [-150 -50]; % Baseline correction window
-			blctype = 'subtractive'; % 'Divisive','none', or subtractive are the other types
+			%blcwin = [-150 -50]; % Baseline correction window
+            blcwin = [0 0]; % Baseline correction window
+			%blctype = 'subtractive'; % 'Divisive','none', or subtractive are the other types
+            blctype = 'none'; % 'Divisive','none', or subtractive are the other types
 			fshading = 'interp'; % Controls of color shading. Can be 'flat' or  'interp'.
 			fcontour = 'off'; % displays isolines calculated from matrix Z and fills the areas between the isolines using constant colors corresponding to the current figure's colormap. Can be 'on' or  'off'.
 			Ylog = 1; % Logarithmic scale for frequency range (fwindow). Can be 1 (means apply log scale)  or  0 (means apply linear scale).
@@ -295,8 +293,13 @@ for tfatype=1:length(tfaTypes)
 	%         subplot(2,3,i);
             disp(strcat(string(bin),',',string(chan)))
 			plotTFA(TFA, datatype, binArray, chanArray, amprange, twindow, fwindow, blcwin, blctype,fshading,fcontour,Ylog,plotype);
-			filename = strcat(binDescriptors{bin},'_ch',string(chan),'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
-			title(filename,'interpreter', 'none')
+			if datatype == 0
+                filename = strcat('Power_',binDescriptors{bin},'_ch',string(chan),'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
+            elseif datatype == 1
+                %Phase or ITC
+                filename = strcat('ITC_',binDescriptors{bin},'_ch',string(chan),'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
+            end
+            title(filename,'interpreter', 'none')
 			%title('hello','interpreter', 'none');
 			colorbar
 			ax = gca;
