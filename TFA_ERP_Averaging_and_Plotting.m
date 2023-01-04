@@ -17,7 +17,8 @@ addpath('C:\Users\ams2590\Documents\MATLAB\eeglab2021.1');
 addpath('C:\Users\ams2590\Documents\MATLAB\ColumbiaScripts');
 
 erpFolders = 'H:\Monkey-data\ERP Files';
-tfaFolder = 'H:\Monkey-data\TFA Files';%This does not have separate folders for each group!
+%tfaFolder = 'H:\Monkey-data\TFA Files';%This does not have separate folders for each group!
+tfaFolder = 'H:\Monkey-data\TFA Files\ChanIsolateTFA';%Here we have extracted the channels we want
 %Define the output folders
 erpAvgFolder = 'H:\Monkey-data\Analysis_Files\Adi Averaging and Plotting\Grand Averages\ERP Grand Averages';
 tfaAvgFolder = 'H:\Monkey-data\Analysis_Files\Adi Averaging and Plotting\Grand Averages\TFA Grand Averages';
@@ -39,7 +40,8 @@ eeglab
 
 groups = {{'Nonket','AA','BF'},{'Nonket','AA','nBF'},{'Nonket','PA','nBF'},{'Preket','PA','nBF'}};
 %Define the TFA types
-tfaTypes = {'ITC','POW','TFA'};
+tfaTypes = {'ITC','POW'};
+%tfaTypes = {'ITC','POW','TFA'};
 %%
 %TODO:Create EFFT for each individual and then do a grand average
 EFFTFolder = 'EFFTFiles';%This will store the efft files in each group's folder
@@ -164,6 +166,7 @@ folderflag = ~[tfaFiles.isdir];%We want to know if the item is a directory
 tfaFiles = {tfaFiles(folderflag).name};
 cd(tfaFolder)
 badFiles = {};
+channelMismatch = {};
 disp([groups{1}])
 %We need to iterate through each group, find the files that match in name
 %and then add them to the list of files to average
@@ -190,29 +193,38 @@ for g=1:length(groups)
                     matchFlag = false;
                 end
             end
-            if matchFlag
+            %Quickly load the tfa to check the number of channels
+            TFA = loadTFA('filename',tfaFiles{t},'filepath',tfaFolder);
+            
+            if matchFlag && TFA.nchan == 6
                 grandAvgFiles{end + 1} = tfaFiles{t};
-                
-                
             else
+                channelMismatch{end + 1} = tfaFiles{t};
                 continue;
             end
+        end
+        try
+            TFA = GrandAveragerTFA_Old(grandAvgFiles);
+        catch
+            badFiles{end + 1} = [tfaTypes{tfatype} '_' strjoin(groups{g},'_')];
+            disp([tfaTypes{tfatype} '_' strjoin(groups{g},'_')]);
+            continue;
         end
         %Do the averaging
-        try
-            TFA = GrandAveragerTFA(grandAvgFiles, 0); %type of data to work on specified after comma: 0=power; 1=phase; 2=amplitude; 3=ITC 
-        catch
-            %We can try to see if we can use 3=ITC
-            try 
-
-                TFA = GrandAveragerTFA(grandAvgFiles,1);
-            catch
-                %If this doesn't work add it to a list and continue
-                badFiles{end + 1} = [tfaTypes{tfatype} '_' strjoin(groups{g},'_')];
-                disp([tfaTypes{tfatype} '_' strjoin(groups{g},'_')]);
-                continue;
-            end
-        end
+%         try
+%             TFA = GrandAveragerTFA(grandAvgFiles, 0); %type of data to work on specified after comma: 0=power; 1=phase; 2=amplitude; 3=ITC 
+%         catch
+%             %We can try to see if we can use 3=ITC
+%             try 
+% 
+%                 TFA = GrandAveragerTFA(grandAvgFiles,1);
+%             catch
+%                 %If this doesn't work add it to a list and continue
+%                 badFiles{end + 1} = [tfaTypes{tfatype} '_' strjoin(groups{g},'_')];
+%                 disp([tfaTypes{tfatype} '_' strjoin(groups{g},'_')]);
+%                 continue;
+%             end
+%         end
         tfasetname = ['Group_' strjoin(groups{g},'_'),'_' tfaTypes{tfatype} '_grandAverage']; %ITC, Baselined_TPower
         filenameTFA = fullfile(tfaAvgFolder, [tfasetname '.tfa']); 
         TFA.setname  = tfasetname;
@@ -234,6 +246,7 @@ folderflag = ~[tfaFiles.isdir];%We want to know if the item is a directory
 tfaFiles = {tfaFiles(folderflag).name};
 cd(tfaAvgFolder)
 badFiles = {};
+channelNames = {'S-top','S-bot', 'G-top' 'G-bot','I-top', 'I-bot'};
 for tfatype=1:length(tfaTypes)
     for t=1:length(tfaFiles)
         fileNameOnly = split(tfaFiles{t},'.');
@@ -299,10 +312,10 @@ for tfatype=1:length(tfaTypes)
                 disp(strcat(string(bin),',',string(chan),',',string(datatype)))
                 plotTFA(TFA, datatype, binArray, chanArray, amprange, twindow, fwindow, blcwin, blctype,fshading,fcontour,Ylog,plotype);
                 if datatype == 0
-                    filename = strcat('Power_',binDescriptors{bin},'_ch',string(chan),'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
+                    filename = strcat('Power_',binDescriptors{bin},'_',channelNames{chan},'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
                 elseif datatype == 1
                     %Phase or ITC
-                    filename = strcat('ITC_',binDescriptors{bin},'_ch',string(chan),'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
+                    filename = strcat('ITC_',binDescriptors{bin},'_',channelNames{chan},'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
                 end
                 title(filename,'interpreter', 'none')
                 %title('hello','interpreter', 'none');
