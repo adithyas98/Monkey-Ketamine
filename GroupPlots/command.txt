@@ -1,0 +1,5 @@
+convert AllGroupsErp_*.png AllGroupsPseudoERP.pdf
+convert *_GrandAverage.png EvokedPowerGrandAvgTFAs.pdf
+
+convert *ITC*.png ITCGrandAvgTFAs.pdf
+convert *POW*.png BLTPowerGrandAvgTFAs.pdf

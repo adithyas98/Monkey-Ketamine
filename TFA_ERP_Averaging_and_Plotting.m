@@ -38,7 +38,9 @@ if exist(groupPlots, 'dir')==0
 end
 eeglab
 
-groups = {{'Nonket','AA','BF'},{'Nonket','AA','nBF'},{'Nonket','PA','nBF'},{'Preket','PA','nBF'}};
+%groups = {{'Nonket','AA','BF'},{'Nonket','AA','nBF'},{'Nonket','PA','nBF'},{'Preket','PA','nBF'}};
+groups = {{'AA','BF'},{'AA','nBF'},{'PA','BF'},{'PA','nBF'}};
+
 %Define the TFA types
 tfaTypes = {'ITC','POW'};
 %tfaTypes = {'ITC','POW','TFA'};
@@ -191,24 +193,35 @@ for g=1:length(groups)
                     matchFlag = true;
                 else
                     matchFlag = false;
+                    break;
                 end
             end
             %Quickly load the tfa to check the number of channels
             TFA = loadTFA('filename',tfaFiles{t},'filepath',tfaFolder);
             
-            if matchFlag && TFA.nchan == 6
-                grandAvgFiles{end + 1} = tfaFiles{t};
+            if matchFlag 
+                if TFA.nchan == 6
+                    grandAvgFiles{end + 1} = tfaFiles{t};
+                else
+                    channelMismatch{end + 1} = tfaFiles{t};
+                    continue;
+                end
             else
-                channelMismatch{end + 1} = tfaFiles{t};
                 continue;
             end
+            
         end
+        
         try
             TFA = GrandAveragerTFA_Old(grandAvgFiles);
         catch
-            badFiles{end + 1} = [tfaTypes{tfatype} '_' strjoin(groups{g},'_')];
-            disp([tfaTypes{tfatype} '_' strjoin(groups{g},'_')]);
-            continue;
+            try
+                TFA = GrandAveragerTFA(grandAvgFiles,1);
+            catch
+                badFiles{end + 1} = [tfaTypes{tfatype} '_' strjoin(groups{g},'_')];
+                disp([tfaTypes{tfatype} '_' strjoin(groups{g},'_')]);
+                continue;
+            end
         end
         %Do the averaging
 %         try
@@ -229,13 +242,14 @@ for g=1:length(groups)
         filenameTFA = fullfile(tfaAvgFolder, [tfasetname '.tfa']); 
         TFA.setname  = tfasetname;
         save(filenameTFA, 'TFA');
+        clear TFA
     end
 
 end
 
 disp("Done with TFA Averaging")
 
-
+disp(length(channelMismatch))
 
 
 %%
@@ -244,6 +258,7 @@ disp("Done with TFA Averaging")
 tfaFiles = dir(tfaAvgFolder);
 folderflag = ~[tfaFiles.isdir];%We want to know if the item is a directory
 tfaFiles = {tfaFiles(folderflag).name};
+
 cd(tfaAvgFolder)
 badFiles = {};
 channelNames = {'S-top','S-bot', 'G-top' 'G-bot','I-top', 'I-bot'};
@@ -271,7 +286,14 @@ for tfatype=1:length(tfaTypes)
 			%we are looking at, this will be based on the tfaTypes variable
 			%above
 			%tfaTypes = {'ITC','POW','TFA'}; For reference
+            %datatype=[0 1]
             for datatype=[0 1]
+                if datatype == 0 && contains(tfaFiles{t},'ITC')
+                    continue;
+                end
+                if datatype == 1 && contains(tfaFiles{t},'POW')
+                    continue;
+                end
                 %datatype = 0; % 0=power; 1=Phase(but really ITC)
                 binArray = [bin]; % Bin indices to plot %TODO:change the 
                 chanArray = [chan]; % Maximum number of channels = TFA.nchan
@@ -309,13 +331,17 @@ for tfatype=1:length(tfaTypes)
                 % electrode_title = 0;
                 %Make our plot
         %         subplot(2,3,i);
-                disp(strcat(string(bin),',',string(chan),',',string(datatype)))
+                disp(strcat(string(tfaFiles{t}),',',string(bin),',',string(chan),',',string(datatype)))
                 plotTFA(TFA, datatype, binArray, chanArray, amprange, twindow, fwindow, blcwin, blctype,fshading,fcontour,Ylog,plotype);
+                if contains(tfaFiles{t},'ITC')
+                    disp(datatype);
+                    disp('Hello');
+                end
                 if datatype == 0
-                    filename = strcat('Power_',binDescriptors{bin},'_',channelNames{chan},'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
+                    filename = strcat(binDescriptors{bin},'_',channelNames{chan},'_',fileNameOnly{1}(1:end-13),'_BL_',blctype,'_',strjoin(string(blcwin),'_'));
                 elseif datatype == 1
                     %Phase or ITC
-                    filename = strcat('ITC_',binDescriptors{bin},'_',channelNames{chan},'_',fileNameOnly{1}(7:20),'_Baseline_',blctype,'_',strjoin(string(blcwin),'_'));
+                    filename = strcat(binDescriptors{bin},'_',channelNames{chan},'_',fileNameOnly{1}(1:end-13));
                 end
                 title(filename,'interpreter', 'none')
                 %title('hello','interpreter', 'none');
@@ -357,22 +383,22 @@ end
 %Now we can plot
 [ERP ALLERP] = pop_loaderp( 'filename', files, 'filepath', erpAvgFolder);
 singleFileBins = ERP.nbin;
-ERP = pop_appenderp( ALLERP , 'Erpsets',1:4,'Prefixes',fileNameOnly );
+ERP = pop_appenderp( ALLERP , 'Erpsets',1:length(files),'Prefixes',fileNameOnly );
 
 nbins = ERP.nbin;
 nchans = ERP.nchan;
 for bin=1:singleFileBins
     %plot all of the bins separately
-    ERP = pop_ploterps(ERP,bin:singleFileBins:nbins,1:nchans , 'Maximize', 'on', 'AutoYlim', 'on', 'Axsize', [ 0.05 0.08], 'BinNum', 'on', 'Blc', 'pre', 'Box', [ 3 2], 'ChLabel', 'on', 'FontSizeChan',10, 'FontSizeLeg',12, 'FontSizeTicks',10, 'LegPos', 'bottom', 'Linespec', {'k-' , 'r-' , 'b-' , 'g-' }, 'LineWidth',1, 'Maximize', 'on', 'Position', [ 103.714 28 106.857 31.9412], 'Style', 'Classic', 'Tag', 'ERP_figure', 'Transparency',0, 'xscale', [ -200 1000 -200:250:1000 ], 'YDir', 'normal' );
+    ERP = pop_ploterps(ERP,bin:singleFileBins:nbins,1:nchans , 'Maximize', 'on', 'AutoYlim', 'on', 'Axsize', [ 0.05 0.08], 'BinNum', 'on', 'Blc', 'pre', 'Box', [ 3 2], 'ChLabel', 'on', 'FontSizeChan',10, 'FontSizeLeg',12, 'FontSizeTicks',10, 'LegPos', 'bottom', 'Linespec', {'k-' , 'r-' , 'b-' , 'g-','c-','m-'}, 'LineWidth',1, 'Maximize', 'on', 'Position', [ 103.714 28 106.857 31.9412], 'Style', 'Classic', 'Tag', 'ERP_figure', 'Transparency',0, 'xscale', [ -200 1000 -200:250:1000 ], 'YDir', 'normal' );
     title(['AllGroupsErp'],'interpreter', 'none')
     ax = gca;
     filename = strcat(groupPlots,'\AllGroupsErp_Bin_',string(bin),'.png');
     saveas(ax,filename)
 end
 
-%Filer the ERP
+%Filter the ERP
 [ERP ALLERP] = pop_loaderp( 'filename', files, 'filepath', erpAvgFolder);
-ERP = pop_appenderp( ALLERP , 'Erpsets',1:4,'Prefixes',fileNameOnly );
+ERP = pop_appenderp( ALLERP , 'Erpsets',1:length(files),'Prefixes',fileNameOnly );
 ERP = pop_filterp( ERP,1, 'Cutoff', [ 0.1 40], 'Design', 'butter', 'Filter', 'bandpass', 'Order',2 );% GUI: 06-Jul-2022 12:42:26
 
 
@@ -381,7 +407,7 @@ nbins = ERP.nbin;
 nchans = ERP.nchan;
 for bin=1:singleFileBins
     %plot all of the bins separately
-    ERP = pop_ploterps(ERP,bin:singleFileBins:nbins,1:nchans , 'Maximize', 'on', 'AutoYlim', 'on','Axsize', [ 0.05 0.08], 'BinNum', 'on', 'Blc', 'pre', 'Box', [ 3 2], 'ChLabel', 'on', 'FontSizeChan',10, 'FontSizeLeg',12, 'FontSizeTicks',10, 'LegPos', 'bottom', 'Linespec', {'k-' , 'r-' , 'b-' , 'g-' }, 'LineWidth',1, 'Maximize', 'on', 'Position', [ 103.714 28 106.857 31.9412], 'Style', 'Classic', 'Tag', 'ERP_figure', 'Transparency',0, 'xscale', [ -200 1000 -200:250:1000 ], 'YDir', 'normal' );
+    ERP = pop_ploterps(ERP,bin:singleFileBins:nbins,1:nchans , 'Maximize', 'on', 'AutoYlim', 'on','Axsize', [ 0.05 0.08], 'BinNum', 'on', 'Blc', 'pre', 'Box', [ 3 2], 'ChLabel', 'on', 'FontSizeChan',10, 'FontSizeLeg',12, 'FontSizeTicks',10, 'LegPos', 'bottom', 'Linespec', {'k-' , 'r-' , 'b-' , 'g-','c-','m-'}, 'LineWidth',1, 'Maximize', 'on', 'Position', [ 103.714 28 106.857 31.9412], 'Style', 'Classic', 'Tag', 'ERP_figure', 'Transparency',0, 'xscale', [ -200 1000 -200:250:1000 ], 'YDir', 'normal' );
     title(['AllGroupsErpFiltered_[0.1,40]'],'interpreter', 'none')
     ax = gca;
     filename = strcat(groupPlots,'\AllGroupsErp_Filtered_Bin_',string(bin),'.png');
